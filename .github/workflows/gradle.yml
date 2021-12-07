@@ -1,50 +1,34 @@
 # This workflow will build a Java project with Gradle
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: Java CI with Gradle
 
 on:
   push:
-    branches: [ master, dev ] // master , dev 에 푸시 이벤트가 발생하면 실행
-  pull_request:
-    branches: [ master, dev ] // master , dev 에 풀리퀘스트 이벤트가 발생하면 실행
+    branches:
+      - master
+
+name: Deploy String boot to Amazon EC2
+env:
+  PROJECT_NAME: action_codedeploy
 
 jobs:
-  build:
-    runs-on: ubuntu-latest // 18.04 LTS 로 돌아간다.
+  deploy:
+    name: DEPLOY
+    runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8 // JDK  버전 사용
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew // gradlew 을 사용하기 위한 실행권한 획득
-    - name: Build with Gradle // 빌드
-      env:
-        ubi_email: ${{ secrets.ubi_email }} // 환경변수 설정 
-        ubi_pw: ${{ secrets.ubi_pw }} // 환경변수 설정
-      run: |
-        ./gradlew --version
-        ./gradlew build
-    - name: If failure then upload test reports
-      if: failure() // 테스트나 빌드가 실패시 실행
-      run: |
-        TARBALL_BASENAME="r6-stats-report"
-        TARBALL="$TARBALL_BASENAME.tar"
-        
-        echo 'Collecting the test report'
-        find . -path '*/build/reports/tests' -type d \
-          -exec tar rf "$TARBALL" \
-            --xform="s:./:$TARBALL_BASENAME/:" \
-            --xform='s:/build/reports/tests::' \
-            {} ';'
-        
-        echo 'Compressing the test reports .. '
-        gzip "$TARBALL"
-        
-        echo 'Uploading the test reports .. '
-        curl -F "file=@$TARBALL.gz" 'https://file.io/'
-        echo
-        echo 'Download the test reports from the URL above.'
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        shell: bash
+
+      - name: Build with Gradle
+        run: ./gradlew build
+        shell: bash
